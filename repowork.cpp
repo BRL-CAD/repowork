@@ -1220,6 +1220,7 @@ main(int argc, char *argv[])
 
 	if (result.count("help"))
 	{
+	    options.custom_help(std::string("[OPTION...] <input_file> <output_file>"));
 	    std::cout << options.help({""}) << std::endl;
 	    return 0;
 	}
@@ -1325,7 +1326,7 @@ main(int argc, char *argv[])
     }
 
     if (argc != 3) {
-	std::cout << "repowork [opts] <input_file> <output_file>\n";
+	std::cout << "repowork [OPTION...] <input_file> <output_file>\n";
 	return -1;
     }
     std::ifstream infile(argv[1], std::ifstream::binary);
