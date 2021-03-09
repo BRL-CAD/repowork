@@ -246,7 +246,7 @@ main(int argc, char *argv[])
     std::string svn_accounts;
     std::string svn_rev_map;
     std::string svn_branch_map;
-    std::string svn_branches_to_tags;
+    std::string svn_tags;
     std::string remove_commits;
     std::string correct_branches;
     std::string cvs_auth_map;
@@ -266,9 +266,9 @@ main(int argc, char *argv[])
 	    ("email-map", "Specify replacement username+email mappings (one map per line, format is commit-id-1;commit-id-2)", cxxopts::value<std::vector<std::string>>(), "map file")
 	    ("svn-accounts", "Specify svn rev -> committer map (one mapping per line, format is commit-rev name)", cxxopts::value<std::vector<std::string>>(), "map file")
 	    ("svn-revs", "Specify git sha1 -> svn rev map (one mapping per line, format is sha1;[commit-rev])", cxxopts::value<std::vector<std::string>>(), "map file")
-	    ("svn-branches", "Specify [git sha1|rev] -> svn branch (one mapping per line, format is key:[branch;branch])", cxxopts::value<std::vector<std::string>>(), "map file")
-	    ("svn-branches-to-tags", "Specify git sha1 list that was committed to tags, not branches", cxxopts::value<std::vector<std::string>>(), "sha1 list")
-	    ("correct-branches", "Specify rev -> branch sets (key;[branch;branch].  Will override svn-branches assignments.)", cxxopts::value<std::vector<std::string>>(), "map")
+	    ("set-branches", "Specify [git sha1|rev] -> svn branch (one mapping per line, format is key:[branch;branch])", cxxopts::value<std::vector<std::string>>(), "map file")
+	    ("svn-tags", "Specify git sha1 list that was committed to tags, not branches", cxxopts::value<std::vector<std::string>>(), "sha1 list")
+	    ("correct-branches", "Specify rev -> branch sets (key;[branch;branch].  Will override set-branches assignments.)", cxxopts::value<std::vector<std::string>>(), "map")
 	    ("remove-commits", "Specify sha1 list of commits to remove from history", cxxopts::value<std::vector<std::string>>(), "list_file")
 
 	    ("cvs-auth-map", "msg&time -> cvs author map (needs sha1->key map)", cxxopts::value<std::vector<std::string>>(), "file")
@@ -357,9 +357,9 @@ main(int argc, char *argv[])
 	    svn_rev_map = ff[0];
 	}
 
-	if (result.count("svn-branches"))
+	if (result.count("set-branches"))
 	{
-	    auto& ff = result["svn-branches"].as<std::vector<std::string>>();
+	    auto& ff = result["set-branches"].as<std::vector<std::string>>();
 	    svn_branch_map = ff[0];
 	}
 
@@ -375,10 +375,10 @@ main(int argc, char *argv[])
 	    remove_commits = ff[0];
 	}
 
-	if (result.count("svn-branches-to-tags"))
+	if (result.count("svn-tags"))
 	{
-	    auto& ff = result["svn-branches-to-tags"].as<std::vector<std::string>>();
-	    svn_branches_to_tags = ff[0];
+	    auto& ff = result["svn-tags"].as<std::vector<std::string>>();
+	    svn_tags = ff[0];
 	}
 
 	if (result.count("width"))
@@ -506,8 +506,8 @@ main(int argc, char *argv[])
     if (correct_branches.length()) {
 	git_assign_branch_labels(&fi_data, correct_branches, 1);
     }
-    if (svn_branches_to_tags.length()) {
-	git_set_tag_labels(&fi_data, svn_branches_to_tags);
+    if (svn_tags.length()) {
+	git_set_tag_labels(&fi_data, svn_tags);
     }
 
     fi_data.wrap_width = cwidth;
