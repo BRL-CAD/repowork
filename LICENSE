@@ -1,3 +1,10 @@
+Note: This code uses cxxopts.hpp and TextFlow.hpp, which have their
+own licenses as documented in the respective files.
+
+The remainder of the code is public domain / CC0 1.0:
+
+
+
 Creative Commons Legal Code
 
 CC0 1.0 Universal
