@@ -22,6 +22,7 @@ set(repowork_srcs
   notes.cpp
   repowork.cpp
   reset.cpp
+  svn_cvs_maps.cpp
   svn_cvs_msgs.cpp
   tag.cpp
   )

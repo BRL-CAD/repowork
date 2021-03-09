@@ -230,15 +230,20 @@ extern int parse_progress(git_fi_data *fi_data, std::ifstream &infile);
 extern int parse_ls(git_fi_data *fi_data, std::ifstream &infile);
 extern int parse_option(git_fi_data *fi_data, std::ifstream &infile);
 
-
-extern void parse_cvs_svn_info(git_commit_data *c, std::string &str);
-extern void update_commit_msg(git_commit_data *c);
 extern int git_unpack_notes(git_fi_data *s, std::string &repo_path);
 extern int git_parse_notes(git_fi_data *s);
+
+/* CVS/SVN related functionality */
+extern void parse_cvs_svn_info(git_commit_data *c, std::string &str);
+extern void update_commit_msg(git_commit_data *c);
 extern int git_update_svn_revs(git_fi_data *s, std::string &svn_rev_map);
 extern int git_assign_branch_labels(git_fi_data *s, std::string &svn_branch_map, int update_mode);
 extern int git_set_tag_labels(git_fi_data *s, std::string &tag_list);
 
+extern int git_map_svn_committers(git_fi_data *s, std::string &svn_map);
+extern void read_key_cvsbranch_map(git_fi_data *s, std::string &branchfile);
+extern void read_key_cvsauthor_map(git_fi_data *s, std::string &authorfile);
+extern void read_key_sha1_map(git_fi_data *s, std::string &keysha1file);
 
 /* Output */
 extern int write_blob(std::ofstream &outfile, git_blob_data *b, std::ifstream &infile);
