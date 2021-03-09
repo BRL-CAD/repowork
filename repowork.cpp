@@ -237,6 +237,8 @@ main(int argc, char *argv[])
     bool replace_commits = false;
     bool add_commits = false;
     bool no_blobs = false;
+    bool no_commits = false;
+    bool no_tags = false;
     bool collapse_notes = false;
     bool wrap_commit_lines = false;
     bool trim_whitespace = false;
@@ -264,29 +266,34 @@ main(int argc, char *argv[])
 
 	options.add_options()
 	    ("email-map", "Specify replacement username+email mappings (one map per line, format is commit-id-1;commit-id-2)", cxxopts::value<std::vector<std::string>>(), "map file")
-	    ("svn-accounts", "Specify svn rev -> committer map (one mapping per line, format is commit-rev name)", cxxopts::value<std::vector<std::string>>(), "map file")
-	    ("svn-revs", "Specify git sha1 -> svn rev map (one mapping per line, format is sha1;[commit-rev])", cxxopts::value<std::vector<std::string>>(), "map file")
-	    ("set-branches", "Specify [git sha1|rev] -> svn branch (one mapping per line, format is key:[branch;branch], commits without an entry are cleared)", cxxopts::value<std::vector<std::string>>(), "map file")
-	    ("correct-branches", "Specify rev -> branch sets (one mapping per line, format is key;[branch;branch], entries set here will override values in set-branches assignments, commits without an entry are NOT cleared.)", cxxopts::value<std::vector<std::string>>(), "map")
-	    ("svn-tags", "Specify git sha1 list that was committed to tags, not branches", cxxopts::value<std::vector<std::string>>(), "sha1 list")
-	    ("remove-commits", "Specify sha1 list of commits to remove from history", cxxopts::value<std::vector<std::string>>(), "list_file")
-
-	    ("key-sha1-map", "sha1 -> msg&time map (needs original-oid tags)", cxxopts::value<std::vector<std::string>>(), "file")
-	    ("key-account-map", "msg&time -> author map (needs sha1->key map)", cxxopts::value<std::vector<std::string>>(), "file")
-	    ("key-branch-map", "msg&time -> branch map (needs sha1->key map)", cxxopts::value<std::vector<std::string>>(), "file")
 
 	    ("t,trim-whitespace", "Trim extra spaces and end-of-line characters from the end of commit messages", cxxopts::value<bool>(trim_whitespace))
 	    ("w,wrap-commit-lines", "Wrap long commit lines to 72 cols (won't wrap messages already having multiple non-empty lines)", cxxopts::value<bool>(wrap_commit_lines))
 	    ("width", "Column wrapping width (if enabled)", cxxopts::value<int>(), "N")
 
 	    ("r,repo", "Original git repository path (must support running git log)", cxxopts::value<std::vector<std::string>>(), "path")
-	    ("n,collapse-notes", "Take any git-notes contents and append them to regular commit messages.", cxxopts::value<bool>(collapse_notes))
-	    ("no-blobs", "Write only commits in output .fi file.", cxxopts::value<bool>(no_blobs))
-	    ("list-empty", "Print out information about empty commits.", cxxopts::value<bool>(list_empty))
+	    ("n,collapse-notes", "Take any git-notes contents and append them to regular commit messages.  Requires --repo", cxxopts::value<bool>(collapse_notes))
 
+	    ("add-commits", "Look for git fast-import files in an 'add' directory and add to history.  Unlike splice commits, these are not being inserted into existing commit streams.", cxxopts::value<bool>(add_commits))
+	    ("remove-commits", "Specify sha1 list of commits to remove from history", cxxopts::value<std::vector<std::string>>(), "list_file")
 	    ("splice-commits", "Look for git fast-import files in a 'splices' directory and insert them into the history.", cxxopts::value<bool>(splice_commits))
 	    ("replace-commits", "Look for git fast-import files in a 'replace' directory and overwrite.  File of fast import file should be sha1 of target commit to replace.", cxxopts::value<bool>(replace_commits))
-	    ("add-commits", "Look for git fast-import files in an 'add' directory and add to history.  Unlike splice commits, these are not being inserted into existing commit streams.", cxxopts::value<bool>(add_commits))
+
+	    ("no-blobs", "Write only commits in output .fi file.", cxxopts::value<bool>(no_blobs))
+	    ("no-commits", "Write only commits in output .fi file.", cxxopts::value<bool>(no_commits))
+	    ("no-tags", "Write only commits in output .fi file.", cxxopts::value<bool>(no_tags))
+
+	    ("list-empty", "Print out information about empty commits.", cxxopts::value<bool>(list_empty))
+
+
+	    ("svn-accounts", "Specify svn rev -> committer map (one mapping per line, format is commit-rev name)", cxxopts::value<std::vector<std::string>>(), "map file")
+	    ("svn-revs", "Specify git sha1 -> svn rev map (one mapping per line, format is sha1;[commit-rev])", cxxopts::value<std::vector<std::string>>(), "map file")
+	    ("set-branches", "Specify [git sha1|rev] -> svn branch (one mapping per line, format is key:[branch;branch], commits without an entry are cleared)", cxxopts::value<std::vector<std::string>>(), "map file")
+	    ("correct-branches", "Specify rev -> branch sets (one mapping per line, format is key;[branch;branch], entries set here will override values in set-branches assignments, commits without an entry are NOT cleared.)", cxxopts::value<std::vector<std::string>>(), "map")
+	    ("svn-tags", "Specify git sha1 list that was committed to tags, not branches", cxxopts::value<std::vector<std::string>>(), "sha1 list")
+	    ("key-sha1-map", "sha1 -> msg&time map (needs original-oid tags)", cxxopts::value<std::vector<std::string>>(), "file")
+	    ("key-account-map", "msg&time -> author map (needs sha1->key map)", cxxopts::value<std::vector<std::string>>(), "file")
+	    ("key-branch-map", "msg&time -> branch map (needs sha1->key map)", cxxopts::value<std::vector<std::string>>(), "file")
 
 	    ("rebuild-ids", "Specify commits (revision number or SHA1) to rebuild.  Requires git-repo be set as well.  Needs --show-original-ids information in fast import file", cxxopts::value<std::vector<std::string>>(), "file")
 	    ("rebuild-ids-children", "File with output of \"git rev-list --children --all\" - needed for processing rebuild-ids", cxxopts::value<std::vector<std::string>>(), "file")
@@ -587,16 +594,20 @@ main(int argc, char *argv[])
 	    }
 	}
     }
-    ofile << "progress Writing commits...\n";
-    for (size_t i = 0; i < fi_data.commits.size(); i++) {
-	write_commit(ofile, &fi_data.commits[i], &fi_data, ifile);
-	if ( !(i % 1000) ) {
-	    ofile << "progress commit " << i << " of " << fi_data.commits.size() << "\n";
+    if (!no_commits) {
+	ofile << "progress Writing commits...\n";
+	for (size_t i = 0; i < fi_data.commits.size(); i++) {
+	    write_commit(ofile, &fi_data.commits[i], &fi_data, ifile);
+	    if ( !(i % 1000) ) {
+		ofile << "progress commit " << i << " of " << fi_data.commits.size() << "\n";
+	    }
 	}
     }
-    ofile << "progress Writing tags...\n";
-    for (size_t i = 0; i < fi_data.tags.size(); i++) {
-	write_tag(ofile, &fi_data.tags[i], ifile);
+    if (!no_tags) {
+	ofile << "progress Writing tags...\n";
+	for (size_t i = 0; i < fi_data.tags.size(); i++) {
+	    write_tag(ofile, &fi_data.tags[i], ifile);
+	}
     }
     ofile << "progress Done.\n";
 

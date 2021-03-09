@@ -158,6 +158,7 @@ class git_fi_data {
 	// data - therefore, we need to be able to map from old
 	// SHA1 references to mark values.
 	std::map<std::string, long> sha1_to_mark;
+	std::map<long, std::string> mark_to_sha1;
 
 	// Marks are unique, and context will make it clear which vector
 	// is being referenced.

@@ -144,6 +144,7 @@ parse_blob(git_fi_data *fi_data, std::ifstream &infile)
     // If we have an original-oid sha1, associate it with the mark
     if (gbd.id.sha1.length() == 40) {
 	fi_data->sha1_to_mark[gbd.id.sha1] = gbd.id.mark;
+	fi_data->mark_to_sha1[gbd.id.mark] = gbd.id.sha1;
     }
 
     // Add the blob to the data

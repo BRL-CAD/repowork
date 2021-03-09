@@ -583,19 +583,26 @@ parse_add_commit(git_fi_data *fi_data, std::ifstream &infile)
 
 
 void
-write_op(std::ofstream &outfile, git_op *o)
+write_op(std::ofstream &outfile, git_op *o, git_fi_data *s)
 {
+    bool written = false;
     switch (o->type) {
 	case filemodify:
-	    if (o->dataref.mark > -1) {
-		outfile << "M " << o->mode << " :" << o->dataref.mark << " " << o->path << "\n";
-	    } else {
-		if (o->dataref.sha1.length()) {
+	    if (o->dataref.sha1.length()) {
 		outfile << "M " << o->mode << " " << o->dataref.sha1 << " " << o->path << "\n";
-		} else {
-		    std::cerr << "Invalid filemodify dataref: " << o->dataref.mark << "," << o->dataref.sha1 << "\n";
-		    exit(1);
-		}
+		written = true;
+	    }
+	    if (!written && o->dataref.mark > -1 && s->mark_to_sha1.find(o->dataref.mark) != s->mark_to_sha1.end()) {
+		outfile << "M " << o->mode << " " << s->mark_to_sha1[o->dataref.mark] << " " << o->path << "\n";
+		written = true;
+	    }
+	    if (!written && o->dataref.mark > -1) {
+		outfile << "M " << o->mode << " :" << o->dataref.mark << " " << o->path << "\n";
+		written = true;
+	    }
+	    if (!written) {
+		std::cerr << "Invalid filemodify dataref: " << o->dataref.mark << "," << o->dataref.sha1 << "\n";
+		exit(1);
 	    }
 	    break;
 	case filedelete:
@@ -854,7 +861,7 @@ write_commit(std::ofstream &outfile, git_commit_data *c, git_fi_data *d, std::if
     }
     if (write_ops) {
 	for (size_t i = 0; i < c->fileops.size(); i++) {
-	    write_op(outfile, &c->fileops[i]);
+	    write_op(outfile, &c->fileops[i], d);
 	}
     }
     outfile << "\n";
