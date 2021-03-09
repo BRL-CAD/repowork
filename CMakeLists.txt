@@ -25,6 +25,7 @@ set(repowork_srcs
   svn_cvs_maps.cpp
   svn_cvs_msgs.cpp
   tag.cpp
+  util.cpp
   )
 
 add_executable(repowork ${repowork_srcs})

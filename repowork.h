@@ -210,7 +210,6 @@ class git_fi_data {
 	long mark = -1;
 };
 
-extern int git_parse_commitish(git_commitish &gc, git_fi_data *s, std::string line);
 extern int parse_blob(git_fi_data *fi_data, std::ifstream &infile);
 extern int parse_commit(git_fi_data *fi_data, std::ifstream &infile);
 extern int parse_splice_commit(git_fi_data *fi_data, std::ifstream &infile);
@@ -232,6 +231,12 @@ extern int parse_option(git_fi_data *fi_data, std::ifstream &infile);
 
 extern int git_unpack_notes(git_fi_data *s, std::string &repo_path);
 extern int git_parse_notes(git_fi_data *s);
+
+extern int git_parse_commitish(git_commitish &gc, git_fi_data *s, std::string line);
+extern int git_remove_commits(git_fi_data *s, std::string &remove_commits);
+extern int git_map_emails(git_fi_data *s, std::string &email_map);
+extern int git_id_rebuild_commits(git_fi_data *s, std::string &id_file, std::string &repo_path, std::string &child_commits_file);
+
 
 /* CVS/SVN related functionality */
 extern void parse_cvs_svn_info(git_commit_data *c, std::string &str);
