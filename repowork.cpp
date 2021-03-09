@@ -243,7 +243,7 @@ main(int argc, char *argv[])
     bool list_empty = false;
     std::string repo_path;
     std::string email_map;
-    std::string svn_map;
+    std::string svn_accounts;
     std::string svn_rev_map;
     std::string svn_branch_map;
     std::string svn_branches_to_tags;
@@ -263,8 +263,8 @@ main(int argc, char *argv[])
 	cxxopts::Options options(argv[0], " - process git fast-import files");
 
 	options.add_options()
-	    ("e,email-map", "Specify replacement username+email mappings (one map per line, format is commit-id-1;commit-id-2)", cxxopts::value<std::vector<std::string>>(), "map file")
-	    ("s,svn-map", "Specify svn rev -> committer map (one mapping per line, format is commit-rev name)", cxxopts::value<std::vector<std::string>>(), "map file")
+	    ("email-map", "Specify replacement username+email mappings (one map per line, format is commit-id-1;commit-id-2)", cxxopts::value<std::vector<std::string>>(), "map file")
+	    ("svn-accounts", "Specify svn rev -> committer map (one mapping per line, format is commit-rev name)", cxxopts::value<std::vector<std::string>>(), "map file")
 	    ("svn-revs", "Specify git sha1 -> svn rev map (one mapping per line, format is sha1;[commit-rev])", cxxopts::value<std::vector<std::string>>(), "map file")
 	    ("svn-branches", "Specify [git sha1|rev] -> svn branch (one mapping per line, format is key:[branch;branch])", cxxopts::value<std::vector<std::string>>(), "map file")
 	    ("svn-branches-to-tags", "Specify git sha1 list that was committed to tags, not branches", cxxopts::value<std::vector<std::string>>(), "sha1 list")
@@ -309,16 +309,16 @@ main(int argc, char *argv[])
 	    repo_path = ff[0];
 	}
 
-	if (result.count("e"))
+	if (result.count("email-map"))
 	{
-	    auto& ff = result["e"].as<std::vector<std::string>>();
+	    auto& ff = result["email-map"].as<std::vector<std::string>>();
 	    email_map = ff[0];
 	}
 
-	if (result.count("s"))
+	if (result.count("svn-accounts"))
 	{
-	    auto& ff = result["s"].as<std::vector<std::string>>();
-	    svn_map = ff[0];
+	    auto& ff = result["svn-accounts"].as<std::vector<std::string>>();
+	    svn_accounts = ff[0];
 	}
 
 	if (result.count("rebuild-ids"))
@@ -468,9 +468,9 @@ main(int argc, char *argv[])
 	git_map_emails(&fi_data, email_map);
     }
 
-    if (svn_map.length()) {
+    if (svn_accounts.length()) {
 	// Handle the svn committers
-	git_map_svn_committers(&fi_data, svn_map);
+	git_map_svn_committers(&fi_data, svn_accounts);
     }
 
     if (list_empty) {
