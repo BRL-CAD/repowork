@@ -82,7 +82,7 @@ class git_commit_data {
 	std::vector<git_commitish> merges;
 
 	// Notes present a problem - they're stored using a separate
-	// structure commits, and data but are associated with commits
+	// structure commits, and data are associated with commits
 	// using the SHA1 hash *only* - they aren't tied in to the mark
 	// ids in fast export.  Therefore, we need a --show-original-ids
 	// fast export to be able to make the association during parsing.
@@ -106,13 +106,13 @@ class git_commit_data {
 	// If this commit is to be removed, set this flag
 	bool skip_commit = false;
 
-	// Special purpose entries for assigning an additional line
-	// to the existing notes-based info to id SVN usernames
+	// Special purpose entries for holding SVN and CVS metadata
 	std::string svn_id;
+	std::set<std::string> svn_branches;
+	std::set<std::string> svn_tags;
 	std::string svn_committer;
-
-	std::string cvs_id;
-	std::string cvs_branch;
+	std::set<std::string> cvs_branches;
+	std::string cvs_committer;
 };
 
 class git_tag_data {
@@ -229,6 +229,15 @@ extern int parse_get_mark(git_fi_data *fi_data, std::ifstream &infile);
 extern int parse_progress(git_fi_data *fi_data, std::ifstream &infile);
 extern int parse_ls(git_fi_data *fi_data, std::ifstream &infile);
 extern int parse_option(git_fi_data *fi_data, std::ifstream &infile);
+
+
+extern void parse_cvs_svn_info(git_commit_data *c, std::string &str);
+extern void update_commit_msg(git_commit_data *c);
+extern int git_unpack_notes(git_fi_data *s, std::string &repo_path);
+extern int git_parse_notes(git_fi_data *s);
+extern int git_update_svn_revs(git_fi_data *s, std::string &svn_rev_map);
+extern int git_assign_branch_labels(git_fi_data *s, std::string &svn_branch_map, int update_mode);
+extern int git_set_tag_labels(git_fi_data *s, std::string &tag_list);
 
 
 /* Output */

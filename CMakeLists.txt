@@ -19,8 +19,10 @@ set(repowork_srcs
   blob.cpp
   commit.cpp
   misc_cmds.cpp
+  notes.cpp
   repowork.cpp
   reset.cpp
+  svn_cvs_msgs.cpp
   tag.cpp
   )
 
