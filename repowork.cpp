@@ -249,9 +249,9 @@ main(int argc, char *argv[])
     std::string svn_tags;
     std::string remove_commits;
     std::string correct_branches;
-    std::string cvs_auth_map;
-    std::string cvs_branch_map;
-    std::string keymap;
+    std::string key_account_map;
+    std::string key_branch_map;
+    std::string key_sha1_map;
     std::string children_file;
     std::string id_file;
     int cwidth = 72;
@@ -271,9 +271,9 @@ main(int argc, char *argv[])
 	    ("correct-branches", "Specify rev -> branch sets (key;[branch;branch].  Will override set-branches assignments.)", cxxopts::value<std::vector<std::string>>(), "map")
 	    ("remove-commits", "Specify sha1 list of commits to remove from history", cxxopts::value<std::vector<std::string>>(), "list_file")
 
-	    ("cvs-auth-map", "msg&time -> cvs author map (needs sha1->key map)", cxxopts::value<std::vector<std::string>>(), "file")
-	    ("cvs-branch-map", "msg&time -> cvs branch map (needs sha1->key map)", cxxopts::value<std::vector<std::string>>(), "file")
-	    ("keymap", "sha1 -> msg&time map (needs original-oid tags)", cxxopts::value<std::vector<std::string>>(), "file")
+	    ("key-sha1-map", "sha1 -> msg&time map (needs original-oid tags)", cxxopts::value<std::vector<std::string>>(), "file")
+	    ("key-account-map", "msg&time -> author map (needs sha1->key map)", cxxopts::value<std::vector<std::string>>(), "file")
+	    ("key-branch-map", "msg&time -> branch map (needs sha1->key map)", cxxopts::value<std::vector<std::string>>(), "file")
 
 	    ("t,trim-whitespace", "Trim extra spaces and end-of-line characters from the end of commit messages", cxxopts::value<bool>(trim_whitespace))
 	    ("w,wrap-commit-lines", "Wrap long commit lines to 72 cols (won't wrap messages already having multiple non-empty lines)", cxxopts::value<bool>(wrap_commit_lines))
@@ -333,22 +333,22 @@ main(int argc, char *argv[])
 	    children_file = ff[0];
 	}
 
-	if (result.count("cvs-auth-map"))
+	if (result.count("key-sha1-map"))
 	{
-	    auto& ff = result["cvs-auth-map"].as<std::vector<std::string>>();
-	    cvs_auth_map = ff[0];
+	    auto& ff = result["key-sha1-map"].as<std::vector<std::string>>();
+	    key_sha1_map = ff[0];
 	}
 
-	if (result.count("cvs-branch-map"))
+	if (result.count("key-account-map"))
 	{
-	    auto& ff = result["cvs-branch-map"].as<std::vector<std::string>>();
-	    cvs_branch_map = ff[0];
+	    auto& ff = result["key-account-map"].as<std::vector<std::string>>();
+	    key_account_map = ff[0];
 	}
 
-	if (result.count("keymap"))
+	if (result.count("key-branch-map"))
 	{
-	    auto& ff = result["keymap"].as<std::vector<std::string>>();
-	    keymap = ff[0];
+	    auto& ff = result["key-branch-map"].as<std::vector<std::string>>();
+	    key_branch_map = ff[0];
 	}
 
 	if (result.count("svn-revs"))
@@ -439,24 +439,24 @@ main(int argc, char *argv[])
 	git_parse_notes(&fi_data);
     }
 
-    if (keymap.length()) {
-	read_key_sha1_map(&fi_data, keymap);
+    if (key_sha1_map.length()) {
+	read_key_sha1_map(&fi_data, key_sha1_map);
     }
 
-    if (cvs_auth_map.length()) {
-	if (!keymap.length()) {
+    if (key_account_map.length()) {
+	if (!key_sha1_map.length()) {
 	    std::cerr << "CVS author map specified without key map\n";
 	    return -1;
 	}
-	read_key_cvsauthor_map(&fi_data, cvs_auth_map);
+	read_key_cvsauthor_map(&fi_data, key_account_map);
     }
 
-    if (cvs_branch_map.length()) {
-	if (!keymap.length()) {
+    if (key_branch_map.length()) {
+	if (!key_sha1_map.length()) {
 	    std::cerr << "CVS branch map specified without key map\n";
 	    return -1;
 	}
-	read_key_cvsbranch_map(&fi_data, cvs_branch_map);
+	read_key_cvsbranch_map(&fi_data, key_branch_map);
     }
 
     if (email_map.length()) {
