@@ -236,6 +236,7 @@ extern int git_parse_notes(git_fi_data *s);
 extern int git_parse_commitish(git_commitish &gc, git_fi_data *s, std::string line);
 extern int git_remove_commits(git_fi_data *s, std::string &remove_commits);
 extern int git_map_emails(git_fi_data *s, std::string &email_map);
+extern int git_map_blobs(git_fi_data *s, std::string &blob_map);
 extern int git_id_rebuild_commits(git_fi_data *s, std::string &id_file, std::string &repo_path, std::string &child_commits_file);
 
 

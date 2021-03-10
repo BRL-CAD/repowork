@@ -243,6 +243,7 @@ main(int argc, char *argv[])
     bool wrap_commit_lines = false;
     bool trim_whitespace = false;
     bool list_empty = false;
+    std::string blob_map;
     std::string repo_path;
     std::string email_map;
     std::string svn_accounts;
@@ -273,6 +274,8 @@ main(int argc, char *argv[])
 
 	    ("r,repo", "Original git repository path (must support running git log)", cxxopts::value<std::vector<std::string>>(), "path")
 	    ("n,collapse-notes", "Take any git-notes contents and append them to regular commit messages.  Requires --repo", cxxopts::value<bool>(collapse_notes))
+
+	    ("blob-map", "Specify sha1 list of blobs to replace with other blobs - format is sha1;sha1", cxxopts::value<std::vector<std::string>>(), "list_file")
 
 	    ("add-commits", "Look for git fast-import files in an 'add' directory and add to history.  Unlike splice commits, these are not being inserted into existing commit streams.", cxxopts::value<bool>(add_commits))
 	    ("remove-commits", "Specify sha1 list of commits to remove from history", cxxopts::value<std::vector<std::string>>(), "list_file")
@@ -388,6 +391,12 @@ main(int argc, char *argv[])
 	    svn_tags = ff[0];
 	}
 
+	if (result.count("blob-map"))
+	{
+	    auto& ff = result["blob-map"].as<std::vector<std::string>>();
+	    blob_map = ff[0];
+	}
+
 	if (result.count("width"))
 	{
 	    cwidth = result["width"].as<int>();
@@ -419,7 +428,7 @@ main(int argc, char *argv[])
 	return -1;
     }
 
-    int ret = parse_fi_file(&fi_data, infile);
+    parse_fi_file(&fi_data, infile);
 
     // The subsequent steps, if invoked, may need svn_id set.
     for (size_t i = 0; i < fi_data.commits.size(); i++) {
@@ -582,6 +591,13 @@ main(int argc, char *argv[])
 	    }
 	}
     }
+
+    // The previous steps all dealt with the commit structure.  Now, if supplied, delve
+    // into the blob contents of the trees
+    if (blob_map.length()) {
+	git_map_blobs(&fi_data, blob_map);
+    }
+
 
     std::ifstream ifile(argv[1], std::ifstream::binary);
     std::ofstream ofile(argv[2], std::ios::out | std::ios::binary);

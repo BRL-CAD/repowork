@@ -172,6 +172,72 @@ git_map_emails(git_fi_data *s, std::string &email_map)
     return 0;
 }
 
+int
+git_map_blobs(git_fi_data *s, std::string &email_map)
+{
+    // read map
+    std::ifstream infile(email_map, std::ifstream::binary);
+    if (!infile.good()) {
+	std::cerr << "Could not open blob_map file: " << email_map << "\n";
+	exit(-1);
+    }
+
+    std::map<std::string, std::string> blob_map;
+
+    std::string line;
+    while (std::getline(infile, line)) {
+	// Skip empty lines
+	if (!line.length()) {
+	    continue;
+	}
+
+	size_t spos = line.find_first_of(";");
+	if (spos == std::string::npos) {
+	    std::cerr << "Invalid email map line!: " << line << "\n";
+	    exit(-1);
+	}
+
+	std::string id1 = line.substr(0, spos);
+	std::string id2 = line.substr(spos+1, std::string::npos);
+
+	std::cout << "id1: \"" << id1 << "\"\n";
+	std::cout << "id2: \"" << id2 << "\"\n";
+	blob_map[id1] = id2;
+    }
+
+    // Make sure we have all the assigned SHA1s we know about
+    for (size_t i = 0; i < s->commits.size(); i++) {
+	git_commit_data *c = &(s->commits[i]);
+	for (size_t i = 0; i < c->fileops.size(); i++) {
+	    git_op &o = c->fileops[i];
+	    if (!o.dataref.sha1.length()) {
+		if (s->mark_to_sha1.find(o.dataref.mark) != s->mark_to_sha1.end()) {
+		    o.dataref.sha1 = s->mark_to_sha1[o.dataref.mark];
+		}
+	    }
+	}
+    }
+
+    // Iterate over the commits looking for blobs in the map.  If we find one,
+    // associate it with the new blob.
+    for (size_t i = 0; i < s->commits.size(); i++) {
+	git_commit_data *c = &(s->commits[i]);
+	for (size_t i = 0; i < c->fileops.size(); i++) {
+	    git_op &o = c->fileops[i];
+	    if (!o.dataref.sha1.length())
+		continue;
+	    if (blob_map.find(o.dataref.sha1) != blob_map.end()) {
+		std::cout << "Mapping " << o.dataref.sha1 << " to " << blob_map[o.dataref.sha1] << "\n";
+		std::string oref = o.dataref.sha1;
+		o.dataref.sha1 = blob_map[oref];
+		o.dataref.mark = s->sha1_to_mark[o.dataref.sha1];
+		o.dataref.index = s->mark_to_index[o.dataref.mark];
+	    }
+	}
+    }
+
+    return 0;
+}
 
 void
 process_ls_tree(std::string &sha1)
