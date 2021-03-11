@@ -244,6 +244,7 @@ main(int argc, char *argv[])
     bool trim_whitespace = false;
     bool list_empty = false;
     std::string blob_map;
+    std::string mode_map;
     std::string repo_path;
     std::string email_map;
     std::string svn_accounts;
@@ -275,7 +276,8 @@ main(int argc, char *argv[])
 	    ("r,repo", "Original git repository path (must support running git log)", cxxopts::value<std::vector<std::string>>(), "path")
 	    ("n,collapse-notes", "Take any git-notes contents and append them to regular commit messages.  Requires --repo", cxxopts::value<bool>(collapse_notes))
 
-	    ("blob-map", "Specify sha1 list of blobs to replace with other blobs - format is sha1;sha1", cxxopts::value<std::vector<std::string>>(), "list_file")
+	    ("blob-map", "Specify sha1 list of blobs to replace with other blobs - format is sha1;sha1", cxxopts::value<std::vector<std::string>>(), "map_file")
+	    ("mode-map", "Specify mode to apply to paths - format is mode;path", cxxopts::value<std::vector<std::string>>(), "map_file")
 
 	    ("add-commits", "Look for git fast-import files in an 'add' directory and add to history.  Unlike splice commits, these are not being inserted into existing commit streams.", cxxopts::value<bool>(add_commits))
 	    ("remove-commits", "Specify sha1 list of commits to remove from history", cxxopts::value<std::vector<std::string>>(), "list_file")
@@ -395,6 +397,12 @@ main(int argc, char *argv[])
 	{
 	    auto& ff = result["blob-map"].as<std::vector<std::string>>();
 	    blob_map = ff[0];
+	}
+
+	if (result.count("mode-map"))
+	{
+	    auto& ff = result["mode-map"].as<std::vector<std::string>>();
+	    mode_map = ff[0];
 	}
 
 	if (result.count("width"))
@@ -598,6 +606,9 @@ main(int argc, char *argv[])
 	git_map_blobs(&fi_data, blob_map);
     }
 
+    if (mode_map.length()) {
+	git_map_modes(&fi_data, mode_map);
+    }
 
     std::ifstream ifile(argv[1], std::ifstream::binary);
     std::ofstream ofile(argv[2], std::ios::out | std::ios::binary);

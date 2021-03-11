@@ -173,12 +173,12 @@ git_map_emails(git_fi_data *s, std::string &email_map)
 }
 
 int
-git_map_blobs(git_fi_data *s, std::string &email_map)
+git_map_blobs(git_fi_data *s, std::string &blob_map_file)
 {
     // read map
-    std::ifstream infile(email_map, std::ifstream::binary);
+    std::ifstream infile(blob_map_file, std::ifstream::binary);
     if (!infile.good()) {
-	std::cerr << "Could not open blob_map file: " << email_map << "\n";
+	std::cerr << "Could not open blob_map file: " << blob_map_file << "\n";
 	exit(-1);
     }
 
@@ -193,7 +193,7 @@ git_map_blobs(git_fi_data *s, std::string &email_map)
 
 	size_t spos = line.find_first_of(";");
 	if (spos == std::string::npos) {
-	    std::cerr << "Invalid email map line!: " << line << "\n";
+	    std::cerr << "Invalid blob map line!: " << line << "\n";
 	    exit(-1);
 	}
 
@@ -232,6 +232,57 @@ git_map_blobs(git_fi_data *s, std::string &email_map)
 		o.dataref.sha1 = blob_map[oref];
 		o.dataref.mark = s->sha1_to_mark[o.dataref.sha1];
 		o.dataref.index = s->mark_to_index[o.dataref.mark];
+	    }
+	}
+    }
+
+    return 0;
+}
+
+int
+git_map_modes(git_fi_data *s, std::string &mode_map_file)
+{
+    // read map
+    std::ifstream infile(mode_map_file, std::ifstream::binary);
+    if (!infile.good()) {
+	std::cerr << "Could not open mode_map file: " << mode_map_file << "\n";
+	exit(-1);
+    }
+
+    std::map<std::string, std::string> mode_map;
+
+    std::string line;
+    while (std::getline(infile, line)) {
+	// Skip empty lines
+	if (!line.length()) {
+	    continue;
+	}
+
+	size_t spos = line.find_first_of(";");
+	if (spos == std::string::npos) {
+	    std::cerr << "Invalid mode map line!: " << line << "\n";
+	    exit(-1);
+	}
+
+	std::string id1 = line.substr(0, spos);
+	std::string id2 = line.substr(spos+1, std::string::npos);
+
+	std::cout << "id1: \"" << id1 << "\"\n";
+	std::cout << "id2: \"" << id2 << "\"\n";
+	mode_map[id2] = id1;
+    }
+
+    // Iterate over the commits looking for paths in the map.  If we find one,
+    // associate it with the new mode.
+    for (size_t i = 0; i < s->commits.size(); i++) {
+	git_commit_data *c = &(s->commits[i]);
+	for (size_t i = 0; i < c->fileops.size(); i++) {
+	    git_op &o = c->fileops[i];
+	    if (!o.mode.length() || !o.path.length())
+		continue;
+	    if (mode_map.find(o.path) != mode_map.end()) {
+		std::cout << "Setting mode of " << o.path << " to " << mode_map[o.path] << "\n";
+		o.mode = mode_map[o.path];
 	    }
 	}
     }
