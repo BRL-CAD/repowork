@@ -17,6 +17,17 @@
 
 #include "repowork.h"
 
+// https://stackoverflow.com/a/5607650
+struct schars: std::ctype<char> {
+    schars(): std::ctype<char>(get_table()) {}
+    static std::ctype_base::mask const* get_table() {
+	static const std::ctype<char>::mask *const_table= std::ctype<char>::classic_table();
+	static std::ctype<char>::mask cmask[std::ctype<char>::table_size];
+	std::memcpy(cmask, const_table, std::ctype<char>::table_size * sizeof(std::ctype<char>::mask));
+	cmask[';'] = std::ctype_base::space;
+	return &cmask[0];
+    }
+};
 
 int
 git_parse_commitish(git_commitish &gc, git_fi_data *s, std::string line)
@@ -283,6 +294,65 @@ git_map_modes(git_fi_data *s, std::string &mode_map_file)
 	    if (mode_map.find(o.path) != mode_map.end()) {
 		std::cout << "Setting mode of " << o.path << " to " << mode_map[o.path] << "\n";
 		o.mode = mode_map[o.path];
+	    }
+	}
+    }
+
+    return 0;
+}
+
+int
+git_file_inserts(git_fi_data *s, std::string &mode_map_file)
+{
+    // read map
+    std::ifstream infile(mode_map_file, std::ifstream::binary);
+    if (!infile.good()) {
+	std::cerr << "Could not open mode_map file: " << mode_map_file << "\n";
+	exit(-1);
+    }
+
+    std::map<std::string, std::vector<git_op>> file_insert_map;
+
+    std::string line;
+    while (std::getline(infile, line)) {
+	// Skip empty lines
+	if (!line.length()) {
+	    continue;
+	}
+
+	// Split into a vector, since there may be more than one branch
+	std::stringstream ss(line);
+	std::ostringstream oss;
+	ss.imbue(std::locale(std::locale(), new schars()));
+	std::istream_iterator<std::string> b_begin(ss);
+	std::istream_iterator<std::string> b_end;
+	std::vector<std::string> file_array(b_begin, b_end);
+	std::copy(file_array.begin(), file_array.end(), std::ostream_iterator<std::string>(oss, "\n"));
+	std::cout << "commit sha1: " << file_array[0] << "\n";
+	std::cout << "       mode: " << file_array[1] << "\n";
+	std::cout << "  blob sha1: " << file_array[2] << "\n";
+	std::cout << "       path: " << file_array[3] << "\n";
+
+	git_op nop;
+	nop.type = filemodify;
+	nop.mode = file_array[1];
+	nop.dataref.sha1 = file_array[2];
+	nop.path = file_array[3];
+
+	file_insert_map[file_array[0]].push_back(nop);
+    }
+
+    // Iterate over the commits looking for sha1s in the map.  If we find one,
+    // associate additions with the commit.
+    for (size_t i = 0; i < s->commits.size(); i++) {
+	git_commit_data *c = &(s->commits[i]);
+	if (!c->id.sha1.length())
+	    continue;
+	if (file_insert_map.find(c->id.sha1) != file_insert_map.end()) {
+	    std::vector<git_op> &fv = file_insert_map[c->id.sha1];
+	    for (size_t j = 0; j < fv.size(); j++) {
+		std::cout << "Adding " << fv[j].path << " to " << c->id.sha1 << "\n";
+		c->fileops.push_back(fv[j]);
 	    }
 	}
     }

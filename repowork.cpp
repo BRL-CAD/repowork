@@ -243,6 +243,7 @@ main(int argc, char *argv[])
     bool wrap_commit_lines = false;
     bool trim_whitespace = false;
     bool list_empty = false;
+    std::string file_inserts;
     std::string blob_map;
     std::string mode_map;
     std::string repo_path;
@@ -278,6 +279,7 @@ main(int argc, char *argv[])
 
 	    ("blob-map", "Specify sha1 list of blobs to replace with other blobs - format is sha1;sha1", cxxopts::value<std::vector<std::string>>(), "map_file")
 	    ("mode-map", "Specify mode to apply to paths - format is mode;path", cxxopts::value<std::vector<std::string>>(), "map_file")
+	    ("file-inserts", "Insert paths into existing commits - format is commit_sha1;mode;blob_sha1;path", cxxopts::value<std::vector<std::string>>(), "file_list")
 
 	    ("add-commits", "Look for git fast-import files in an 'add' directory and add to history.  Unlike splice commits, these are not being inserted into existing commit streams.", cxxopts::value<bool>(add_commits))
 	    ("remove-commits", "Specify sha1 list of commits to remove from history", cxxopts::value<std::vector<std::string>>(), "list_file")
@@ -405,6 +407,12 @@ main(int argc, char *argv[])
 	    mode_map = ff[0];
 	}
 
+	if (result.count("file-inserts"))
+	{
+	    auto& ff = result["file-inserts"].as<std::vector<std::string>>();
+	    file_inserts = ff[0];
+	}
+
 	if (result.count("width"))
 	{
 	    cwidth = result["width"].as<int>();
@@ -443,10 +451,16 @@ main(int argc, char *argv[])
 	parse_cvs_svn_info(&fi_data.commits[i], fi_data.commits[i].commit_msg);
     }
 
+    // TODO - there are quite a few more conditions that should trigger this failure...
     if ((replace_commits || splice_commits || add_commits) && !fi_data.have_sha1s) {
 	std::cerr << "Fatal - sha1 SVN rev updating requested, but don't have original sha1 ids - redo fast-export with the --show-original-ids option.\n";
 	exit(1);
     }
+    if (file_inserts.length() && !fi_data.have_sha1s) {
+	std::cerr << "Fatal - file insertions requested, but don't have original sha1 ids - redo fast-export with the --show-original-ids option.\n";
+	exit(1);
+    }
+
 
 
     if (collapse_notes) {
@@ -608,6 +622,10 @@ main(int argc, char *argv[])
 
     if (mode_map.length()) {
 	git_map_modes(&fi_data, mode_map);
+    }
+
+    if (file_inserts.length()) {
+	git_file_inserts(&fi_data, file_inserts);
     }
 
     std::ifstream ifile(argv[1], std::ifstream::binary);
