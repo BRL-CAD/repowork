@@ -27,20 +27,13 @@ encountered with the migration to github.com)
 
 Examples:
 
+* Trim whitespace from commit messages
 
-* Rebuild CVS only conversion with verify generated .fi files:
-
-cd brlcad_cvs_git && git rev-list --children --all > children.txt && cd ..
-./repowork -r brlcad_cvs_git --children children_cvs --cvs-ids cvs_problem_sha1.txt ~/brlcad_cvs.fi test_cvs.fi
+./repowork -t brlcad.fi trimmed.fi
 
 
+* Collapse notes:
 
-* Enabling all features:
+./repowork --repo /home/user/brlcad.git --collapse-notes ~/brlcad.fi final.fi
 
-./repowork -t -w -n -r brlcad.git -e brlcad_map -s rev_map --cvs-ids cvs_problem_sha1.txt --children children.txt ~/brlcad.fi final.fi
-
-* Adding CVS info:
-
-./repowork -t -n -r brlcad.git --keymap msgtime_sha1_map --cvs-auth-map key_authormap --cvs-branch-map key_branchmap brlcad_input.
-fi test.fi
 
